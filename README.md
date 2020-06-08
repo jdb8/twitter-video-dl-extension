@@ -1,68 +1,36 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# twitter-video-dl
 
-## Available Scripts
+**Super early alpha status: lots of bugs** - see [Troubleshooting](#Troubleshooting) if you run into problems.
 
-In the project directory, you can run:
+![how it looks](./example.png)
 
-### `yarn start`
+## Install
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+For now, you'll need to download the extension from github and installed it unpacked:
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+1. Download the extension
+1. `cd twitter-video-dl-extension && yarn build`
+1. Visit chrome://extensions (via omnibox or menu -> Tools -> Extensions)
+1. Enable Developer mode by ticking the checkbox in the upper-right corner
+1. Click on the "Load unpacked extension..." button
+1. Select the directory containing the downloaded extension code
 
-### `yarn test`
+I'll look into creating a CRX soon, I guess.
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Usage
 
-### `yarn build`
+Once installed, you should be able to right-click on any Twitter video and see a 'Download video' link. Clicking it should download the video as an mp4.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Why
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+I couldn't find any existing extensions/user scripts that would allow me to download Twitter videos entirely client-side. Most existing services appear to use the Twitter API on the backend, and request your tweet remotely to grab the raw video files.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+This extension doesn't require a Twitter API key as it uses the data that your browser already downloaded in order to play the video, powered by the [wasm port of ffmpeg] to transcode in the background.
 
-### `yarn eject`
+## Troubleshooting
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+There are a bunch of bugs right now, so if you run into problems the following steps are suggested:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+* Try refreshing the page
+* If that doesn't work, try reloading the extension in `chrome://extensions`
+* If you still get problems, please file an issue with any console output from the background view (inspect-able from `chrome://extensions`) as well as the console of the page you're viewing on Twitter
