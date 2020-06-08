@@ -2,7 +2,7 @@
 
 **Super early alpha status: lots of bugs** - see [Troubleshooting](#Troubleshooting) if you run into problems.
 
-![how it looks](./example.png)
+<img src="./example.png" width="500" alt="how it looks" />
 
 ## Install
 
