@@ -11,49 +11,77 @@ const ffmpeg = createFFmpeg({ corePath, log: true });
 
 const playlists = new Map();
 
+// global.chrome.webNavigation.onHistoryStateUpdated.addListener((data) => {
+//     console.log('wooo', { data });
+//     playlists.clear();
+//     console.log('cleared playlists map', playlists);
+//     global.chrome.tabs.sendMessage(data.tabId, { event: 'changed_tab', url: data.url });
+// });
+
 global.chrome.webRequest.onCompleted.addListener(
     function (info) {
-        console.log('Cat intercepted: ' + info.url);
-        const urlParts = info.url.split('/');
-        const quality = urlParts[urlParts.length - 2];
-        playlists.set(quality, info.url);
+        ffmpeg.load();
+        console.log('Cat intercepted: ' + info.url, { info });
+        if (info.tabId > 0) {
+            // the request might be from our own extension
+            global.chrome.tabs.sendMessage(info.tabId, { event: 'got_playlist', url: info.url });
+        }
+        // const urlParts = info.url.split('/');
+        // const quality = urlParts[urlParts.length - 2];
+        const videoId = info.url.match(/ext_tw_video\/(\d+?)\//)[1];
+
+        // let qualityMap = playlists.get(videoId);
+        // if (!qualityMap) {
+        //     qualityMap = new Map();
+        //     playlists.set(videoId, qualityMap);
+        // }
+
+        playlists.set(videoId, info.url);
         console.log(playlists);
-        // Redirect the lolcal request to a random loldog URL.
-        // var i = Math.round(Math.random() * loldogs.length);
-        // return { redirectUrl: loldogs[i] };
     },
     // filters
     {
-        urls: ['https://video.twimg.com/*.m3u8'],
+        urls: ['https://video.twimg.com/*.m3u8?tag=*'],
     }
 );
 
 global.chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    console.log(sender.tab ? 'from a content script:' + sender.tab.url : 'from the extension');
-    if (request.greeting == 'hello') {
-        transcode().then((url) => {
-            global.chrome.downloads.download({
-                url: url,
-                filename: 'my-cool-video.mp4', // Optional
-            });
-            sendResponse('done!');
-        }).catch(err => sendResponse(err));
+    if (request.greeting === 'hello') {
+        const filename = `${request.tweetId}.mp4`;
+        transcode(request.videoId, filename)
+            .then((url) => {
+                global.chrome.downloads.download({
+                    url: url,
+                    filename, // Optional
+                });
+                sendResponse('done!');
+            })
+            .catch((err) => sendResponse(err));
+
         return true;
     }
 });
 
 export const getLastValueInMap = (map) => Array.from(map)[map.size - 1][1];
 
-// const playlistUrl = 'https://video.twimg.com/ext_tw_video/1255378027409739776/pr/pl/1280x720/2cDdtdfrTVszP4xt.m3u8';
-
-// This needs to be an export due to typescript implementation limitation of needing '--isolatedModules' tsconfig
-const transcode = async () => {
+const transcode = async (videoId, filename) => {
     console.log('Loading ffmpeg-core.js');
     await ffmpeg.load();
     console.log('Start transcoding');
 
-    const playlistUrl = getLastValueInMap(playlists);
-    const resp = await fetch(playlistUrl);
+    const masterPlaylist = playlists.get(videoId);
+    const masterPlaylistResp = await fetch(masterPlaylist);
+    const playlistUrls = (await masterPlaylistResp.text())
+        .split('\n')
+        .filter((line) => line && !line.startsWith('#'))
+        .map((line) => new URL(masterPlaylist).origin + line);
+    console.log({ playlistUrls });
+    const highestQualityUrl = playlistUrls[playlistUrls.length - 1];
+
+    // const qualityMap = playlists.get(videoId);
+    // const playlistUrl = getLastValueInMap(qualityMap);
+    console.log({ highestQualityUrl });
+    const resp = await fetch(highestQualityUrl);
     const playList = await resp.text();
     const playListLines = playList.split('\n');
     const tsFiles = playListLines.filter((line) => line.endsWith('.ts'));
@@ -83,22 +111,13 @@ const transcode = async () => {
 
     await ffmpeg.writeText('input.m3u8', playListData);
     await ffmpeg.run(
-        '-protocol_whitelist file,http,https,tcp,tls -i input.m3u8 -bsf:a aac_adtstoasc -vcodec copy -c copy -crf 50 output.mp4'
+        `-protocol_whitelist file,http,https,tcp,tls -i input.m3u8 -bsf:a aac_adtstoasc -vcodec copy -c copy -crf 50 ${filename}`
     );
     console.log('Complete transcoding');
-    const data = ffmpeg.read('output.mp4');
+    const data = ffmpeg.read(filename);
 
-    // const video = document.getElementById('output-video');
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
     const url = URL.createObjectURL(blob);
     console.log({ url });
     return url;
-    // video.src = url;
-
-    // var a = document.createElement('a');
-    // document.body.appendChild(a);
-    // a.style = 'display: none';
-    // a.href = url;
-    // a.download = 'video.mp4';
-    // a.click();
 };
