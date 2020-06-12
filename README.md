@@ -25,7 +25,7 @@ Once installed, you should be able to right-click on any Twitter video and see a
 
 I couldn't find any existing extensions/user scripts that would allow me to download Twitter videos entirely client-side. Most existing services appear to use the Twitter API on the backend, and request your tweet remotely to grab the raw video files.
 
-This extension doesn't require a Twitter API key as it uses the data that your browser already downloaded in order to play the video, powered by the [wasm port of ffmpeg] to transcode in the background.
+This extension doesn't require a Twitter API key as it uses the data that your browser already downloaded in order to play the video, powered by the [wasm port of ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) to transcode in the background.
 
 ## Troubleshooting
 
