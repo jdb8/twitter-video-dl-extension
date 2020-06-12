@@ -6,16 +6,16 @@
 
 ## Install
 
-For now, you'll need to download the extension from github and installed it unpacked:
+Until this is on the Chrome store, you'll need to download the extension from github and installed it unpacked:
 
-1. Download the extension
-1. `cd twitter-video-dl-extension && yarn build`
+1. Download the extension (as a zip file + unpack, or via `git clone git@github.com:jdb8/twitter-video-dl-extension.git`)
+1. `cd twitter-video-dl-extension && yarn build`. This should create a `build` folder
 1. Visit chrome://extensions (via omnibox or menu -> Tools -> Extensions)
 1. Enable Developer mode by ticking the checkbox in the upper-right corner
 1. Click on the "Load unpacked extension..." button
-1. Select the directory containing the downloaded extension code
+1. Select the `build`  directory that was generated earlier
 
-I'll look into creating a CRX soon, I guess.
+Unfortunately Google seems to have disabled the ability to install local .crx files, so this is the only way to install it before it's on the store.
 
 ## Usage
 
