@@ -16,8 +16,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "pack": "crx pack build -o extension.crx",
-    "buildpack": "yarn build && yarn pack",
+    "pack-ext": "crx pack build -o extension.crx",
+    "buildpack": "yarn build && yarn pack-ext",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
