@@ -16,6 +16,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "pack": "crx pack build -o extension.crx",
+    "buildpack": "yarn build && yarn pack",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -33,5 +35,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.8.0",
+    "crx": "^5.0.1"
   }
 }
