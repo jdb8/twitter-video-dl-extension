@@ -1,30 +1,26 @@
 {
   "manifest_version": 2,
   "version": "0.0.1",
-  "short_name": "React App",
-  "name": "Create React App Sample",
-  "description": "Sample application showing how to create an extension with Create React App",
+  "short_name": "Twitter video downloader",
+  "name": "Twitter video downloader",
+  "description": "Extension adding support for downloading Twitter videos",
   "browser_action": {
-    "default_title": "CRE",
-    "default_popup": "popup.html"
+    "default_icon": "twitter_128_grey.png",
+    "default_title": "Twitter video downloader - right click a video to download"
   },
   "background": {
     "scripts": ["background.bundle.js"]
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://*.twitter.com/*", "https://twitter.com/*"],
       "js": ["contentScript.bundle.js"]
     }
   ],
   "web_accessible_resources": [
       "vendor/**/*"
   ],
-  "icons": {
-    "16": "img/icon-16.png",
-    "48": "img/icon-48.png",
-    "128": "img/icon-128.png"
-  },
+  "icons": { "128": "twitter_128.png" },
   "permissions": ["webNavigation", "downloads", "webRequest", "*://*.twitter.com/", "*://*.twimg.com/"],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

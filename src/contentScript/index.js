@@ -1,3 +1,5 @@
+global.chrome.runtime.sendMessage({event: 'init'});
+
 document.addEventListener('contextmenu', (e) => {
     const placementTracking = e.target.closest('[data-testid="placementTracking"]');
     if (placementTracking) {
@@ -37,7 +39,7 @@ function handleVideoRightClick(video, placementTracking) {
         if (menuItem) {
             const menuItemWrapper = menuItem.parentElement;
             if (menuItemWrapper.querySelector('[data-dl-button]')) {
-                console.warn('already added button');
+                console.log('already added button');
                 me.disconnect();
                 return;
             }
@@ -48,6 +50,7 @@ function handleVideoRightClick(video, placementTracking) {
             clone.tabIndex = 1;
             clone.dataset.dlButton = 'true';
             const textSpan = clone.querySelector('span');
+            const oldTextColor = textSpan.style.color;
             textSpan.innerText = 'Download video';
             textSpan.style.opacity = 0.2;
 
@@ -55,41 +58,55 @@ function handleVideoRightClick(video, placementTracking) {
 
             menuItem.insertAdjacentElement('afterend', clone);
 
-            global.chrome.runtime.sendMessage({ videoId, event: 'contextmenu' }, (request, sender, sendResponse) => {
-                console.log({ request });
+            let attempts = 0;
+            function sendContextMenuMessage() {
+                global.chrome.runtime.sendMessage(
+                    { videoId, event: 'contextmenu' },
+                    (request, sender, sendResponse) => {
+                        console.log({ request });
 
-                if (!request) {
-                    return;
-                }
+                        if (!request) {
+                            if (attempts < 5) {
+                                setTimeout(() => {
+                                    sendContextMenuMessage();
+                                }, 2000);
+                            }
+                            return;
+                        }
 
-                if (request.error === 'missing_video_id') {
-                    textSpan.style.color = 'red';
-                    console.error(
-                        request.error,
-                        'No video id found in background script data - try reloading the page'
-                    );
-                    return;
-                }
+                        if (request.error === 'missing_video_id') {
+                            textSpan.style.color = 'red';
+                            console.error(
+                                request.error,
+                                'No video id found in background script data - try reloading the page'
+                            );
+                            return;
+                        }
 
-                textSpan.style.opacity = 1;
+                        textSpan.style.color = oldTextColor;
+                        textSpan.style.opacity = 1;
 
-                clone.addEventListener('mouseover', (e) => {
-                    clone.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
-                });
+                        clone.addEventListener('mouseover', (e) => {
+                            clone.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                        });
 
-                clone.addEventListener('mouseout', (e) => {
-                    clone.style.backgroundColor = 'transparent';
-                });
+                        clone.addEventListener('mouseout', (e) => {
+                            clone.style.backgroundColor = 'transparent';
+                        });
 
-                clone.removeEventListener('click', stop);
-                clone.addEventListener('click', (e) => {
-                    console.log('clicked download ' + videoId);
-                    global.chrome.runtime.sendMessage({ videoId, greeting: 'hello' }, function (response) {
-                        console.log('got response!');
-                        console.log({ response });
-                    });
-                });
-            });
+                        clone.removeEventListener('click', stop);
+                        clone.addEventListener('click', (e) => {
+                            console.log('clicked download ' + videoId);
+                            global.chrome.runtime.sendMessage({ videoId, greeting: 'hello' }, function (response) {
+                                console.log('got response!');
+                                console.log({ response });
+                            });
+                        });
+                    }
+                );
+            }
+
+            sendContextMenuMessage();
 
             me.disconnect();
             return;

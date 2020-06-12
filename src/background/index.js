@@ -1,18 +1,70 @@
-// If your extension doesn't need a background script, just leave this file empty
 const { createFFmpeg } = require('@ffmpeg/ffmpeg');
 
 const corePath = global.chrome.runtime.getURL('./vendor/ffmpeg-core/ffmpeg-core.js');
 const ffmpeg = createFFmpeg({ corePath, log: true });
 
 const playlists = new Map();
+const twitterVideoTabs = new Set();
+
+const loadFfmpeg = async (tabId) => {
+    await ffmpeg.load();
+    global.chrome.browserAction.setIcon({ path: 'twitter_128.png', tabId });
+}
+
+const resetView = (data) => {
+    const tabObject = playlists.get(data.tabId);
+    if (tabObject) {
+        console.log('clearing!');
+        tabObject.viewSpecificVideoIds.clear();
+    }
+
+    syncBadge(data.tabId);
+};
+
+const syncBadge = (tabId) => {
+    console.log('sync', { tabId }, {ffmpeg});
+    const tabObject = playlists.get(tabId);
+    let badgeText = '';
+    if (tabObject) {
+        const viewSpecificVideoIds = tabObject.viewSpecificVideoIds;
+        badgeText = viewSpecificVideoIds.size > 0 ? '' + viewSpecificVideoIds.size : '';
+    }
+
+    console.log('syncing badge', { tabId, tabObj: playlists.get(tabId), badgeText });
+    global.chrome.browserAction.setBadgeText({ text: badgeText, tabId });
+};
+
+global.chrome.webNavigation.onHistoryStateUpdated.addListener(resetView);
+global.chrome.webNavigation.onBeforeNavigate.addListener(resetView);
+
+global.chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+    if (twitterVideoTabs.has(tabId)) {
+        console.log('unloading twitter tab video', tabId);
+        playlists.delete(tabId);
+        twitterVideoTabs.delete(tabId);
+        console.log({ playlists });
+    }
+});
 
 global.chrome.webRequest.onCompleted.addListener(
     function (info) {
+        loadFfmpeg(info.tabId);
+
         console.log('m3u8 playlist intercepted: ' + info.url, { info });
         const videoId = info.url.match(/(?:amplify|ext_tw)_video\/(\d+?)\//)[1];
 
-        // TODO: work out good removal strategy to avoid this growing infinitely
-        playlists.set(videoId, info.url);
+        twitterVideoTabs.add(info.tabId);
+        console.log(global.chrome.browserAction);
+
+        let tabObject = playlists.get(info.tabId);
+        if (!tabObject) {
+            tabObject = { id: info.tabId, urlMap: new Map(), viewSpecificVideoIds: new Set() };
+            playlists.set(info.tabId, tabObject);
+        }
+
+        tabObject.urlMap.set(videoId, info.url);
+        tabObject.viewSpecificVideoIds.add(videoId);
+        syncBadge(info.tabId);
         console.log(playlists);
     },
     {
@@ -21,9 +73,10 @@ global.chrome.webRequest.onCompleted.addListener(
 );
 
 global.chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    console.log({ request, sender });
     if (request.greeting === 'hello') {
         const filename = `${request.videoId}.mp4`;
-        transcode(request.videoId, filename)
+        transcode(sender.tab.id, request.videoId, filename)
             .then((url) => {
                 if (url) {
                     global.chrome.downloads.download({
@@ -39,10 +92,14 @@ global.chrome.runtime.onMessage.addListener(function (request, sender, sendRespo
 
         return true;
     } else if (request.event === 'contextmenu') {
-        if (!playlists.has(request.videoId)) {
-            sendResponse({error: 'missing_video_id'});
+        if (!playlists.has(sender.tab.id) || !playlists.get(sender.tab.id).urlMap.has(request.videoId)) {
+            sendResponse({ error: 'missing_video_id' });
         } else {
-            ffmpeg.load().then(() => sendResponse('loaded'));
+            // still kinda jank
+            ffmpeg.load().then(() => {
+                sendResponse('loaded');
+                global.chrome.browserAction.setIcon({ path: 'twitter_128.png', tabId: sender.tab.id });
+            });
         }
     }
 });
@@ -56,7 +113,7 @@ function getUrlFromData(data) {
     return url;
 }
 
-const transcode = async (videoId, filename) => {
+const transcode = async (tabId, videoId, filename) => {
     console.log('Loading ffmpeg-core.js');
     // TODO: find good way to preload this - seems like background.js still janks up
     // the main thread when we run this
@@ -65,7 +122,7 @@ const transcode = async (videoId, filename) => {
     try {
         // Short-circuit in case we already have it
         const data = ffmpeg.read(filename);
-        console.log('No need to transcode, already done:', filename)
+        console.log('No need to transcode, already done:', filename);
         return getUrlFromData(data);
     } catch (e) {
         // nada
@@ -73,7 +130,7 @@ const transcode = async (videoId, filename) => {
 
     console.log('Start transcoding');
 
-    const masterPlaylist = playlists.get(videoId);
+    const masterPlaylist = playlists.get(tabId).urlMap.get(videoId);
     const masterPlaylistResp = await fetch(masterPlaylist);
     const playlistUrls = (await masterPlaylistResp.text())
         .split('\n')
@@ -82,8 +139,6 @@ const transcode = async (videoId, filename) => {
     console.log({ playlistUrls });
     const highestQualityUrl = playlistUrls[playlistUrls.length - 1];
 
-    // const qualityMap = playlists.get(videoId);
-    // const playlistUrl = getLastValueInMap(qualityMap);
     console.log({ highestQualityUrl });
     const resp = await fetch(highestQualityUrl);
     const playList = await resp.text();
