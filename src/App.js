@@ -1,7 +1,6 @@
 /** @jsx jsx */
 import * as React from 'react';
 import { jsx } from '@emotion/core';
-import tw from 'twin.macro';
 import './App.css';
 
 function Button({children, ...props}) {
