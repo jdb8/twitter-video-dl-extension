@@ -1,8 +1,12 @@
 # twitter-video-dl
 
-**Super early alpha status: lots of bugs** - see [Troubleshooting](#Troubleshooting) if you run into problems.
-
 <img src="./example.png" width="500" alt="how it looks" />
+
+## Features
+
+* Download any twitter video to a local mp4 file
+* Doesn't communicate with any server
+* Works for private tweets
 
 ## Install
 
@@ -23,13 +27,15 @@ Once installed, you should be able to right-click on any Twitter video and see a
 
 ## Why
 
-I couldn't find any existing extensions/user scripts that would allow me to download Twitter videos entirely client-side. Most existing services appear to use the Twitter API on the backend, and request your tweet remotely to grab the raw video files.
+I couldn't find any existing extensions/user scripts that would allow me to download Twitter videos entirely client-side. Most existing services appear to use the Twitter API on the backend, and request your tweet remotely to grab the raw video files. This wasn't really suitable for downloading tweets from private accounts or when just generally wanting to avoid giving a random third-party info about what videos I'm viewing.
 
-This extension doesn't require a Twitter API key as it uses the data that your browser already downloaded in order to play the video, powered by the [wasm port of ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) to transcode in the background.
+This extension doesn't require a Twitter API key as it uses the data that your browser already downloaded in order to play the video, powered by the [wasm port of ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) to transcode in the background. Think of it as an alternate user-agent to let you watch videos in a potentially more accessible way without compromising your privacy.
+
+Native libraries such as `youtube-dl` (and `ffmpeg` as used here in wasm form) can achieve the same purpose, but don't offer the convenience of right-clicking a video in the browser to download. If you don't care about that convenience, you might want to check out those alternatives.
 
 ## Troubleshooting
 
-There are a bunch of bugs right now, so if you run into problems the following steps are suggested:
+There might be a bunch of bugs right now, so if you run into problems the following steps are suggested:
 
 * Try refreshing the page
 * If that doesn't work, try reloading the extension in `chrome://extensions`
