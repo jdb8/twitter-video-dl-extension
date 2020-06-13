@@ -30,7 +30,8 @@ const syncBadge = (tabId) => {
         badgeText = viewSpecificVideoIds.size > 0 ? '' + viewSpecificVideoIds.size : '';
     }
 
-    console.log('syncing badge', { tabId, tabObj: playlists.get(tabId), badgeText });
+    console.log('syncing badge', { tabId, tabObject, badgeText });
+    // FIXME: setting wrong badge text on unrelated tabs (videos loading in background tab?)
     global.chrome.browserAction.setBadgeText({ text: badgeText, tabId });
 };
 
